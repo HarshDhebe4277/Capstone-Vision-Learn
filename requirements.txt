@@ -1,0 +1,24 @@
+# ── Web framework ─────────────────────────────────────────────────────────────
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+python-dotenv>=1.0.0
+
+# ── Database ──────────────────────────────────────────────────────────────────
+SQLAlchemy==1.4.49
+alembic==1.11.1
+psycopg2-binary==2.9.7
+
+# ── LangChain + Mistral ───────────────────────────────────────────────────────
+langchain>=0.2.0
+langchain-core>=0.2.0
+langchain-mistralai>=0.1.0   # ChatMistralAI integration
+mistralai>=1.0.0             # Official Mistral SDK (Voxtral + Pixtral)
+
+# ── Pipeline tools ────────────────────────────────────────────────────────────
+yt-dlp                       # YouTube download + stream URL extraction
+pydub>=0.25.1                # Audio chunking for parallel transcription
+edge-tts>=6.1.9              # Free Microsoft Edge TTS (no API key)
+Pillow>=10.0.0               # Image handling / base64 encoding
+aiofiles>=23.0.0             # Async file I/O
+aiohttp>=3.9.0               # Async HTTP client
+PyMuPDF>=1.23.0              # PDF to Image extraction (fitz)

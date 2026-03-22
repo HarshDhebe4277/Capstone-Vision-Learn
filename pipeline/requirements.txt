@@ -1,0 +1,9 @@
+yt-dlp==2026.03.01
+ffmpeg-python==0.3.0
+python-dotenv==1.0.0
+requests==2.31.0
+langchain>=0.0.300  # install latest stable langchain
+langchain-mistralai>=0.0.1  # LangChain Mistral integration (install if available)
+# WhisperS2T depends on a compatible torch build. Install torch first (CPU or CUDA), then:
+#   pip install git+https://github.com/shashikg/WhisperS2T.git@main
+
