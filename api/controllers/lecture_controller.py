@@ -16,10 +16,10 @@ STORAGE_DIR = Path(os.getenv("STORAGE_PATH", "./storage")).resolve()
 
 @router.get("/", summary="List all lectures (Scanning Storage Folder)")
 def list_lectures():
-    lectures = []
+    lectures_with_time = []
 
     if not STORAGE_DIR.exists():
-        return lectures
+        return []
     
     # Loop through every folder inside /storage
     for folder in STORAGE_DIR.iterdir():
@@ -31,6 +31,7 @@ def list_lectures():
             
             if audio_file.exists():
                 # Figure out a title (use the script's first few words if it exists)
+                file_time = os.path.getmtime(audio_file)
                 title = f"Lecture {folder.name[:6]}"
                 if script_file.exists():
                     try:
@@ -40,14 +41,18 @@ def list_lectures():
                         pass
 
                 # Build a fake database object for the frontend
-                lectures.append({
-                    "id": folder.name,
-                    "title": title,
-                    "source_type": "YouTube / Local",
-                    "status": "Ready",
-                })
-                
-    return lectures
+                lectures_with_time.append((
+                    file_time,
+                    {
+                        "id": folder.name,
+                        "title": title,
+                        "source_type": "Processed Note / Video",
+                        "status": "Ready",
+                    }
+                ))
+
+    lectures_with_time.sort(key=lambda x: x[0], reverse=True)   
+    return [lecture[1] for lecture in lectures_with_time]
 
 # def list_lectures(db: Session = Depends(get_db)):
 #     return LectureRepository(db).get_all()

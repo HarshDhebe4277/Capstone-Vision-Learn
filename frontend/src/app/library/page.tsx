@@ -35,7 +35,7 @@ export default function LibraryPage() {
               {/* Pass the selected lecture data to the Player */}
               <MediaPlayer selectedLecture={selectedLecture} />
             </div>
-            <ScriptPanel />
+            <ScriptPanel selectedLecture={selectedLecture} />
           </div>
 
           <ChaptersPanel />

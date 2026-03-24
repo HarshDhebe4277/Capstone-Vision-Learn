@@ -12,6 +12,17 @@ export default function MediaPlayer({ selectedLecture }: { selectedLecture: any 
   const [duration, setDuration] = useState("0:00");
   const [playbackRate, setPlaybackRate] = useState(1);
 
+  useEffect(() => {
+    if (audioRef.current && selectedLecture) {
+      setProgress(0);
+      setCurrentTime("0:00");
+
+      audioRef.current.play()
+        .then(() => setIsPlaying(true))
+        .catch((err) => console.log("Browser blocked autoplay. User must click play.", err));
+    }
+  }, [selectedLecture]);
+
   // Helper to format seconds into M:SS
   const formatTime = (timeInSeconds: number) => {
     if (isNaN(timeInSeconds)) return "0:00";

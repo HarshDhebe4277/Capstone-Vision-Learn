@@ -27,6 +27,10 @@ export default function LibrarySidebar({ selectedLecture, onSelectLecture }: { s
         if (response.ok) {
           const data = await response.json();
           setItems(data);
+
+          if (data.length > 0 && !selectedLecture) {
+            onSelectLecture(data[0]);
+          }
         } else {
           console.error("Failed to fetch library data");
         }
@@ -79,8 +83,8 @@ export default function LibrarySidebar({ selectedLecture, onSelectLecture }: { s
               key={item.id || i}
               onClick={() => onSelectLecture(item)}
               className={`flex items-stretch gap-4 p-4 rounded-xl cursor-pointer transition-all ${selectedLecture?.id === item.id
-                  ? "bg-blue-500 text-white shadow-lg"
-                  : "bg-white dark:bg-[#181a24] hover:bg-gray-50 dark:hover:bg-[#1e2029] border border-gray-100 dark:border-white/5"
+                ? "bg-blue-500 text-white shadow-lg"
+                : "bg-white dark:bg-[#181a24] hover:bg-gray-50 dark:hover:bg-[#1e2029] border border-gray-100 dark:border-white/5"
                 }`}
             >
               <div className="w-12 flex-shrink-0 rounded-lg flex items-center justify-center bg-gray-100 dark:bg-[#252836] text-gray-500 dark:text-gray-400">
