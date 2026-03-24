@@ -23,7 +23,7 @@ target_metadata = Base.metadata
 
 
 def get_url():
-    return os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/vision_learn")
+    return os.getenv("DATABASE_URL", "postgresql://postgres:root@localhost:5432/VisionLearn2")
 
 
 def run_migrations_offline():

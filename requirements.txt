@@ -6,7 +6,7 @@ python-dotenv>=1.0.0
 # ── Database ──────────────────────────────────────────────────────────────────
 SQLAlchemy==1.4.49
 alembic==1.11.1
-psycopg2-binary==2.9.7
+psycopg2-binary>=2.9.7
 
 # ── LangChain + Mistral ───────────────────────────────────────────────────────
 langchain>=0.2.0
