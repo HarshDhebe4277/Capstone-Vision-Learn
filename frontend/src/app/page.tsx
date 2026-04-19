@@ -9,6 +9,8 @@ import Footer from "@/components/Footer";
 import { UploadCloud, FileText, Image as ImageIcon, Clapperboard, ScanText, Languages } from "lucide-react";
 import ProcessingPage from "./processing/page"
 
+const generateUID = () => Math.random().toString(36).substring(2, 15);
+
 export default function Home() {
   const router = useRouter();
 
@@ -17,6 +19,7 @@ export default function Home() {
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [notesFile, setNotesFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [currentJobId, setCurrentJobId] = useState<string | undefined>(undefined);
 
   // --- API Connection Logic ---
   const handleProcessVideo = async () => {
@@ -25,6 +28,8 @@ export default function Home() {
       return;
     }
 
+    const jobId = generateUID();
+    setCurrentJobId(jobId);
     setIsProcessing(true);
 
     try {
@@ -35,12 +40,13 @@ export default function Home() {
         await fetch(`${apiUrl}/api/pipeline/process`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ youtube_url: youtubeUrl }),
+          body: JSON.stringify({ youtube_url: youtubeUrl, lecture_id: jobId }),
         });
       } else if (videoFile) {
         // Hit the Local Video Upload Endpoint
         const formData = new FormData();
         formData.append("file", videoFile);
+        formData.append("lecture_id", jobId);
         await fetch(`${apiUrl}/api/pipeline/upload`, {
           method: "POST",
           body: formData,
@@ -53,6 +59,7 @@ export default function Home() {
       console.error("Error starting video pipeline:", error);
       alert("Failed to connect to the backend server.");
       setIsProcessing(false);
+      setCurrentJobId(undefined);
     }
   };
 
@@ -62,12 +69,15 @@ export default function Home() {
       return;
     }
 
+    const jobId = generateUID();
+    setCurrentJobId(jobId);
     setIsProcessing(true);
 
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
       const formData = new FormData();
       formData.append("file", notesFile);
+      formData.append("lecture_id", jobId);
 
       // Hit the Notes Endpoint
       await fetch(`${apiUrl}/api/notes/process`, {
@@ -82,11 +92,12 @@ export default function Home() {
       console.error("Error starting notes pipeline:", error);
       alert("Failed to connect to the backend server.");
       setIsProcessing(false);
+      setCurrentJobId(undefined);
     }
   };
 
   if (isProcessing) {
-    return <ProcessingPage />;
+    return <ProcessingPage jobId={currentJobId} />;
   }
 
   return (

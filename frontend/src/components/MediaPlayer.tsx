@@ -78,7 +78,10 @@ export default function MediaPlayer({ selectedLecture }: { selectedLecture: any 
 
   const toggleSpeed = () => {
     if (audioRef.current) {
-      const newRate = playbackRate === 1 ? 1.25 : playbackRate === 1.25 ? 1.5 : playbackRate === 1.5 ? 2 : 1;
+      const speedOptions = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2];
+      const currentIndex = speedOptions.findIndex((speed) => speed === playbackRate);
+      const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % speedOptions.length;
+      const newRate = speedOptions[nextIndex];
       audioRef.current.playbackRate = newRate;
       setPlaybackRate(newRate);
     }
