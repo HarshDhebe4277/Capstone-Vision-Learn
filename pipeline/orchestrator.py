@@ -31,6 +31,7 @@ from pipeline.chains.timestamp_chain import build_timestamp_chain
 from pipeline.chains.narration_chain import generate_narration_script
 from pipeline.utils.cache import PipelineCache
 from pipeline.utils.ffmpeg_utils import assert_ffmpeg
+from pipeline.progress import update_progress
 
 STORAGE: Path = Path(os.getenv("STORAGE_PATH", "./storage")).resolve()
 AUDIO_CHUNK_COUNT: int = int(os.getenv("AUDIO_CHUNK_COUNT", "12"))
@@ -67,9 +68,11 @@ async def run_pipeline(
 
     # ── Step 1: Fetch stream URL + download audio in PARALLEL ──────────────
     if cache.has("stream_url") and audio_path.exists():
+        update_progress(video_id, 1, 15.0, "Cache hit: audio already downloaded.")
         stream_url = cache.get("stream_url")
         print("[Step 1] Cache hit: stream URL + audio")
     else:
+        update_progress(video_id, 1, 0.0, "Fetching YouTube stream URL & downloading audio in parallel...")
         print("[Step 1] Fetching stream URL and downloading audio in parallel...")
         stream_url, _ = await asyncio.gather(
             get_stream_url(youtube_url),
@@ -80,6 +83,7 @@ async def run_pipeline(
 
     # ── Step 2: Split audio into chunks ────────────────────────────────────
     print(f"[Step 2] Splitting audio into {AUDIO_CHUNK_COUNT} chunks...")
+    update_progress(video_id, 2, 20.0, f"Splitting audio into {AUDIO_CHUNK_COUNT} chunks...")
     chunks = split_audio_into_chunks(audio_path, n_chunks=AUDIO_CHUNK_COUNT)
     print(f"[Step 2] {len(chunks)} chunks created")
 
@@ -87,11 +91,14 @@ async def run_pipeline(
     transcript_path = workdir / "transcript" / "transcript.json"
 
     if cache.has("transcript"):
+        update_progress(video_id, 3, 40.0, "Cache hit: transcript already generated.")
         transcript_data = cache.get("transcript")
         print(f"[Step 3] Cache hit: {len(transcript_data['segments'])} segments")
     else:
+        update_progress(video_id, 3, 25.0, f"Transcribing {len(chunks)} chunks in parallel via Voxtral API...")
         print(f"[Step 3] Transcribing {len(chunks)} chunks in parallel via Voxtral...")
         transcript_data = await transcribe_audio_parallel(chunks)
+        update_progress(video_id, 3, 40.0, "Transcription complete.")
         transcript_path.parent.mkdir(parents=True, exist_ok=True)
         transcript_path.write_text(json.dumps(transcript_data, indent=2, ensure_ascii=False), encoding="utf-8")
         cache.set("transcript", transcript_data)
@@ -99,9 +106,11 @@ async def run_pipeline(
 
     # ── Step 4: Select key timestamps via Mistral LLM ─────────────────────
     if cache.has("segments"):
+        update_progress(video_id, 4, 55.0, "Cache hit: key timestamps found.")
         segments = cache.get("segments")
         print(f"[Step 4] Cache hit: {len(segments)} key segments")
     else:
+        update_progress(video_id, 4, 45.0, "Selecting key pedagogical timestamps via Mistral LLM...")
         print("[Step 4] Selecting key timestamps via Mistral LLM...")
         timestamp_chain = build_timestamp_chain()
         segments = await timestamp_chain.ainvoke(
@@ -114,9 +123,11 @@ async def run_pipeline(
     frames_dir = workdir / "frames"
 
     if cache.has("frames") and frames_dir.exists():
+        update_progress(video_id, 5, 70.0, "Cache hit: video frames extracted.")
         frames = cache.get("frames")
         print(f"[Step 5] Cache hit: {len(frames)} frames")
     else:
+        update_progress(video_id, 5, 60.0, f"Extracting {len(segments)} frames in parallel from stream...")
         print(f"[Step 5] Extracting {len(segments)} frames in parallel from CDN stream...")
         frames = await extract_frames_parallel(stream_url, segments, frames_dir)
         cache.set("frames", frames)
@@ -126,10 +137,12 @@ async def run_pipeline(
     script_path = workdir / "script.txt"
 
     if cache.has("script"):
+        update_progress(video_id, 6, 85.0, "Cache hit: narration script found.")
         script = cache.get("script")
         print(f"[Step 6] Cache hit: script ({len(script)} chars)")
     else:
         vision_model_name = os.getenv("MISTRAL_VISION_MODEL", "pixtral-12b-latest")
+        update_progress(video_id, 6, 75.0, f"Generating pedagogical script via {vision_model_name}...")
         print(f"[Step 6] Generating pedagogical script via {vision_model_name} ({len(frames)} frames)...")
         script = await generate_narration_script(
             frames=frames,
@@ -143,13 +156,16 @@ async def run_pipeline(
     narration_path = workdir / "narration.mp3"
 
     if narration_path.exists():
+        update_progress(video_id, 7, 95.0, "Cache hit: TTS audio generated.")
         print("[Step 7] Narration MP3 already exists, skipping TTS")
     else:
+        update_progress(video_id, 7, 88.0, "Synthesising final narrative speech with Edge TTS...")
         print("[Step 7] Synthesising speech with Edge TTS...")
         await synthesize_narration(script, narration_path)
         print(f"[Step 7] Narration saved: {narration_path}")
 
     # ── Step 8: Persist to DB (optional) ──────────────────────────────────
+    update_progress(video_id, 8, 98.0, "Finalizing pipeline and persisting to database...")
     if db_session and lecture_id:
         _persist_to_db(db_session, lecture_id, transcript_data, frames, script, str(narration_path))
 
@@ -164,6 +180,7 @@ async def run_pipeline(
         "narration": str(narration_path),
     }
 
+    update_progress(video_id, 8, 100.0, "Processing complete! Output is ready.")
     print(f"\n[Orchestrator] Pipeline complete! All artifacts in {workdir}\n")
     return result
 
@@ -203,11 +220,14 @@ async def run_pipeline_local(
     print(f"\n[Orchestrator] Local pipeline for {source_path.name} (id={video_id})")
 
     # ── Step 1: Get audio ───────────────────────────────────────────────────
+    update_progress(video_id, 1, 0.0, "Verifying local file and extracting audio...")
     if audio_path.exists():
+        update_progress(video_id, 1, 15.0, "Cache hit: audio file already extracted")
         print("[Step 1] Cache hit: audio file already extracted")
     elif file_type == "video":
         print("[Step 1] Extracting audio from local video with ffmpeg...")
         extract_audio_from_video(source_path, audio_dir)
+        update_progress(video_id, 1, 15.0, "Extracted audio from local video...")
         print(f"[Step 1] Done — audio at {audio_path}")
     else:
         # audio file: just copy/symlink into workdir
@@ -218,15 +238,18 @@ async def run_pipeline_local(
 
     # ── Step 2: Split audio ─────────────────────────────────────────────────
     print(f"[Step 2] Splitting audio into {AUDIO_CHUNK_COUNT} chunks...")
+    update_progress(video_id, 2, 20.0, f"Splitting audio into {AUDIO_CHUNK_COUNT} chunks...")
     chunks = split_audio_into_chunks(audio_path, n_chunks=AUDIO_CHUNK_COUNT)
     print(f"[Step 2] {len(chunks)} chunks created")
 
     # ── Step 3: Parallel Voxtral transcription ─────────────────────────────
     transcript_path = workdir / "transcript" / "transcript.json"
     if cache.has("transcript"):
+        update_progress(video_id, 3, 40.0, "Cache hit: transcript already generated.")
         transcript_data = cache.get("transcript")
         print(f"[Step 3] Cache hit: {len(transcript_data['segments'])} segments")
     else:
+        update_progress(video_id, 3, 25.0, f"Transcribing {len(chunks)} chunks in parallel via Voxtral API...")
         print(f"[Step 3] Transcribing {len(chunks)} chunks in parallel via Voxtral...")
         transcript_data = await transcribe_audio_parallel(chunks)
         transcript_path.parent.mkdir(parents=True, exist_ok=True)
@@ -239,9 +262,11 @@ async def run_pipeline_local(
     # ── Step 4: Select key timestamps ──────────────────────────────────────
     segments = []
     if cache.has("segments"):
+        update_progress(video_id, 4, 55.0, "Cache hit: key timestamps found.")
         segments = cache.get("segments")
         print(f"[Step 4] Cache hit: {len(segments)} key segments")
     else:
+        update_progress(video_id, 4, 45.0, "Selecting key pedagogical timestamps via Mistral LLM...")
         print("[Step 4] Selecting key timestamps via Mistral LLM...")
         timestamp_chain = build_timestamp_chain()
         segments = await timestamp_chain.ainvoke(
@@ -256,9 +281,11 @@ async def run_pipeline_local(
 
     if file_type == "video":
         if cache.has("frames") and frames_dir.exists():
+            update_progress(video_id, 5, 70.0, "Cache hit: video frames extracted.")
             frames = cache.get("frames")
             print(f"[Step 5] Cache hit: {len(frames)} frames")
         else:
+            update_progress(video_id, 5, 60.0, f"Extracting {len(segments)} frames from local video...")
             print(f"[Step 5] Extracting {len(segments)} frames from local video...")
             # Use local file:// path — ffmpeg handles it natively
             frames = await extract_frames_parallel(str(source_path), segments, frames_dir)
@@ -270,9 +297,11 @@ async def run_pipeline_local(
     # ── Step 6: Generate pedagogical script ────────────────────────────────
     script_path = workdir / "script.txt"
     if cache.has("script"):
+        update_progress(video_id, 6, 85.0, "Cache hit: narration script found.")
         script = cache.get("script")
         print(f"[Step 6] Cache hit: script ({len(script)} chars)")
     else:
+        update_progress(video_id, 6, 75.0, "Generating pedagogical script via Vision LLM...")
         print(f"[Step 6] Generating pedagogical script...")
         script = await generate_narration_script(
             frames=frames,
@@ -285,8 +314,10 @@ async def run_pipeline_local(
     # ── Step 7: Edge TTS synthesis ─────────────────────────────────────────
     narration_path = workdir / "narration.mp3"
     if narration_path.exists():
+        update_progress(video_id, 7, 95.0, "Cache hit: TTS audio generated.")
         print("[Step 7] Narration MP3 already exists, skipping TTS")
     else:
+        update_progress(video_id, 7, 88.0, "Synthesising final narrative speech with Edge TTS...")
         print("[Step 7] Synthesising speech with Edge TTS...")
         await synthesize_narration(script, narration_path)
         print(f"[Step 7] Narration saved: {narration_path}")
@@ -303,6 +334,7 @@ async def run_pipeline_local(
         "source": str(source_path),
     }
 
+    update_progress(video_id, 8, 100.0, "Local processing complete! Output is ready.")
     print(f"\n[Orchestrator] Local pipeline complete! All artifacts in {workdir}\n")
     return result
 
