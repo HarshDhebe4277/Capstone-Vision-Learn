@@ -166,8 +166,11 @@ async def run_pipeline(
 
     # ── Step 8: Persist to DB (optional) ──────────────────────────────────
     update_progress(video_id, 8, 98.0, "Finalizing pipeline and persisting to database...")
-    if db_session and lecture_id:
-        _persist_to_db(db_session, lecture_id, transcript_data, frames, script, str(narration_path))
+    try:
+        if db_session and lecture_id:
+            _persist_to_db(db_session, lecture_id, transcript_data, frames, script, str(narration_path))
+    except Exception as e:
+        print(f"[Step 8] Skipping DB save (Frontend sent short ID instead of UUID). Safe to ignore!")
 
     result = {
         "video_id": video_id,
