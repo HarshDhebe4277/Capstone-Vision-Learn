@@ -9,6 +9,9 @@ from mistralai.client import Mistral
 MISTRAL_API_KEY: str = os.getenv("MISTRAL_API_KEY", "")
 TRANSCRIPTION_MODEL: str = os.getenv("MISTRAL_TRANSCRIPTION_MODEL", "voxtral-mini-latest")
 
+# Add a semaphore to limit concurrent API calls
+sem = asyncio.Semaphore(3)  # Limit to 3 concurrent transcriptions
+
 
 async def _transcribe_single_chunk(
     client: Mistral,
@@ -32,7 +35,8 @@ async def _transcribe_single_chunk(
             language=os.getenv("WHISPER_LANGUAGE", "en"),
         )
 
-    response = await loop.run_in_executor(None, _call_api)
+    async with sem:  # Limit concurrent API calls
+        response = await loop.run_in_executor(None, _call_api)
 
     segments: List[Dict[str, Any]] = []
     for seg in response.segments or []:
@@ -65,7 +69,7 @@ async def transcribe_audio_parallel(
 
     client = Mistral(api_key=MISTRAL_API_KEY)
 
-    # Fire all chunk transcriptions concurrently
+    # Use semaphore to limit parallelism
     tasks = [
         _transcribe_single_chunk(client, chunk_path, start_sec)
         for chunk_path, start_sec, _ in chunks

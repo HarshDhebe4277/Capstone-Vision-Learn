@@ -1,4 +1,8 @@
-"""FrameExtractor service — parallel ffmpeg frame extraction from CDN stream URL.
+"""FrameExtractor service — parallel ffmpeg frame extraction from video files or streams.
+
+Supports both:
+  - Local file paths (e.g., /path/to/video.mp4)
+  - Remote stream URLs (e.g., http://cdn.example.com/video.mp4)
 
 Uses run_in_executor + subprocess.run for Windows compatibility
 (avoids asyncio.create_subprocess_exec which requires ProactorEventLoop on Windows).
@@ -13,20 +17,25 @@ MAX_CONCURRENT_EXTRACTIONS: int = int(os.getenv("MAX_FRAME_WORKERS", "8"))
 
 
 def _extract_frame_sync(
-    stream_url: str,
+    source: str,
     timestamp_seconds: float,
     out_path: Path,
 ) -> bool:
     """
-    Extract one JPEG frame at timestamp_seconds from a remote stream URL using ffmpeg.
-    Uses HTTP range-request seeking — downloads only ~100KB per frame.
+    Extract one JPEG frame at timestamp_seconds from a video source using ffmpeg.
+    
+    Source can be:
+      - Local file path (e.g., /path/to/video.mp4)
+      - Remote stream URL (e.g., http://cdn.example.com/video.mp4)
+    
+    For remote URLs, uses HTTP range-request seeking — downloads only ~100KB per frame.
     Runs synchronously (called inside a thread executor).
     """
     result = subprocess.run(
         [
             "ffmpeg", "-y",
             "-ss", f"{timestamp_seconds:.3f}",  # fast seek before input
-            "-i", stream_url,
+            "-i", source,
             "-frames:v", "1",
             "-q:v", "2",                        # JPEG quality 2 = near-lossless
             "-vf", "scale=1280:-1",
@@ -38,14 +47,18 @@ def _extract_frame_sync(
 
 
 async def extract_frames_parallel(
-    stream_url: str,
+    source: str,
     segments: List[Dict[str, Any]],
     frames_dir: Path,
 ) -> List[Dict[str, Any]]:
     """
     For each segment [{start, end, reason}], extract one frame at the midpoint.
+    
+    Source can be:
+      - Local file path (e.g., /path/to/video.mp4)
+      - Remote stream URL (e.g., http://cdn.example.com/video.mp4)
+    
     All extractions run concurrently (bounded by MAX_CONCURRENT_EXTRACTIONS).
-
     Returns list of {timestamp, path, reason, segment_start, segment_end}.
     """
     frames_dir.mkdir(parents=True, exist_ok=True)
@@ -60,7 +73,7 @@ async def extract_frames_parallel(
             success = await loop.run_in_executor(
                 None,
                 _extract_frame_sync,
-                stream_url,
+                source,
                 midpoint,
                 out_path,
             )

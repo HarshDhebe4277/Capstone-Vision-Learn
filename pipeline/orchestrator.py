@@ -2,11 +2,11 @@
 Pipeline Orchestrator — wires all pipeline steps in an optimised async flow.
 
 Architecture:
-  Step 1 (parallel): fetch CDN stream URL + download audio-only
+  Step 1 (parallel): download video file + download audio file
   Step 2: split audio into N chunks
   Step 3 (parallel): transcribe all chunks via Voxtral API
   Step 4: select key timestamps via Mistral LLM (LangChain)
-  Step 5 (parallel): extract frames from CDN stream via ffmpeg
+  Step 5 (parallel): extract frames from downloaded video file via ffmpeg
   Step 6: generate pedagogical script via Pixtral Vision (LangChain)
   Step 7: synthesise speech via Edge TTS
   Step 8: persist all results to PostgreSQL (optional if db session provided)
@@ -22,7 +22,7 @@ from dotenv import load_dotenv
 
 load_dotenv(override=True)
 
-from pipeline.services.video_downloader import get_stream_url, download_audio
+from pipeline.services.video_downloader import download_audio, download_video
 from pipeline.services.audio_chunker import split_audio_into_chunks
 from pipeline.services.transcription_service import transcribe_audio_parallel
 from pipeline.services.frame_extractor import extract_frames_parallel
@@ -62,21 +62,20 @@ async def run_pipeline(
 
     cache = PipelineCache(workdir)
     audio_path = workdir / "audio" / "audio.mp3"
+    video_path = workdir / "video" / "video.mp4"
 
     print(f"\n[Orchestrator] Starting pipeline for video_id={video_id}")
 
-    # ── Step 1: Fetch stream URL + download audio in PARALLEL ──────────────
-    if cache.has("stream_url") and audio_path.exists():
-        stream_url = cache.get("stream_url")
-        print("[Step 1] Cache hit: stream URL + audio")
+    # ── Step 1: Download video file + download audio in PARALLEL ────────────────
+    if audio_path.exists() and video_path.exists():
+        print("[Step 1] Cache hit: video and audio files already downloaded")
     else:
-        print("[Step 1] Fetching stream URL and downloading audio in parallel...")
-        stream_url, _ = await asyncio.gather(
-            get_stream_url(youtube_url),
+        print("[Step 1] Downloading video and audio files in parallel...")
+        video_path_result, audio_path_result = await asyncio.gather(
+            download_video(youtube_url, video_path),
             download_audio(youtube_url, audio_path),
         )
-        cache.set("stream_url", stream_url)
-        print(f"[Step 1] Done — stream URL obtained, audio at {audio_path}")
+        print(f"[Step 1] Done — video at {video_path_result}, audio at {audio_path_result}")
 
     # ── Step 2: Split audio into chunks ────────────────────────────────────
     print(f"[Step 2] Splitting audio into {AUDIO_CHUNK_COUNT} chunks...")
@@ -110,15 +109,15 @@ async def run_pipeline(
         cache.set("segments", segments)
         print(f"[Step 4] {len(segments)} key segments identified")
 
-    # ── Step 5: Extract frames in PARALLEL from CDN stream ─────────────────
+    # ── Step 5: Extract frames in PARALLEL from downloaded video file ────────────
     frames_dir = workdir / "frames"
 
     if cache.has("frames") and frames_dir.exists():
         frames = cache.get("frames")
         print(f"[Step 5] Cache hit: {len(frames)} frames")
     else:
-        print(f"[Step 5] Extracting {len(segments)} frames in parallel from CDN stream...")
-        frames = await extract_frames_parallel(stream_url, segments, frames_dir)
+        print(f"[Step 5] Extracting {len(segments)} frames in parallel from downloaded video...")
+        frames = await extract_frames_parallel(str(video_path), segments, frames_dir)
         cache.set("frames", frames)
         print(f"[Step 5] {len(frames)} frames extracted")
 

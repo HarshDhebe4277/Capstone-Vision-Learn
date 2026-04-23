@@ -82,6 +82,39 @@ async def download_audio(youtube_url: str, out_path: Path) -> Path:
     return out_path
 
 
+async def download_video(youtube_url: str, out_path: Path) -> Path:
+    """
+    Download the best quality video file (MP4 format).
+    Runs in a thread executor so it is compatible with any asyncio event loop.
+    
+    Returns the path to the downloaded video file.
+    """
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    ytdlp = _get_ytdlp_path()
+    loop = asyncio.get_event_loop()
+    result = await loop.run_in_executor(
+        None,
+        _run_subprocess,
+        [
+            ytdlp,
+            "-f", "bestvideo[ext=mp4]",
+            "--no-playlist",
+            "-o", str(out_path),
+            youtube_url,
+        ],
+    )
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"Video download failed (code {result.returncode}): {result.stderr[:500]}"
+        )
+    if not out_path.exists():
+        candidates = list(out_path.parent.glob("video.*"))
+        if candidates:
+            return candidates[0]
+        raise FileNotFoundError(f"Video file not found after download: {out_path}")
+    return out_path
+
+
 async def get_video_id(youtube_url: str) -> str:
     """Extract the YouTube video ID from a URL."""
     ytdlp = _get_ytdlp_path()
