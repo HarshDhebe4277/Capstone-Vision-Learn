@@ -1,4 +1,4 @@
-"""VideoDownloader service — yt-dlp wrapper for audio-only download and stream URL fetch.
+"""VideoDownloader service — yt-dlp/ffmpeg wrappers for YouTube media download.
 
 Uses asyncio.get_event_loop().run_in_executor() rather than asyncio.create_subprocess_exec
 so it works on BOTH Windows SelectorEventLoop (uvicorn default) and ProactorEventLoop.
@@ -47,6 +47,64 @@ async def get_stream_url(youtube_url: str) -> str:
     if not url:
         raise RuntimeError("yt-dlp returned empty stream URL")
     return url
+
+
+async def download_video(youtube_url: str, out_path: Path) -> Path:
+    """
+    Download a YouTube video locally as MP4.
+    Runs in a thread executor so it is compatible with any asyncio event loop.
+    """
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    ytdlp = _get_ytdlp_path()
+    loop = asyncio.get_event_loop()
+    result = await loop.run_in_executor(
+        None,
+        _run_subprocess,
+        [
+            ytdlp,
+            "-f", "bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4]/b",
+            "--merge-output-format", "mp4",
+            "--no-playlist",
+            "-o", str(out_path),
+            youtube_url,
+        ],
+    )
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"Video download failed (code {result.returncode}): {result.stderr[:500]}"
+        )
+    if not out_path.exists():
+        raise FileNotFoundError(f"Downloaded video not found: {out_path}")
+    return out_path
+
+
+async def extract_audio_from_video(video_path: Path, out_path: Path) -> Path:
+    """
+    Extract MP3 audio from a local video file using ffmpeg.
+    Runs in a thread executor so it is compatible with any asyncio event loop.
+    """
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    loop = asyncio.get_event_loop()
+    result = await loop.run_in_executor(
+        None,
+        _run_subprocess,
+        [
+            "ffmpeg", "-y",
+            "-i", str(video_path),
+            "-vn",
+            "-acodec", "libmp3lame",
+            "-ar", "44100",
+            "-ab", "128k",
+            str(out_path),
+        ],
+    )
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"Audio extraction failed (code {result.returncode}): {result.stderr[:500]}"
+        )
+    if not out_path.exists():
+        raise FileNotFoundError(f"Extracted audio not found: {out_path}")
+    return out_path
 
 
 async def download_audio(youtube_url: str, out_path: Path) -> Path:
