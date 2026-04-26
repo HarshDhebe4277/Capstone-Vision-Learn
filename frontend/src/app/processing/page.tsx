@@ -1,19 +1,94 @@
-import React from "react";
+"use client";
+
+import React, { useState, useEffect, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import PipelineStepCard from "@/components/PipelineStepCard";
-import { CheckCircle2, RefreshCw, MoreHorizontal, Maximize, FileText, Mic, Save, Activity, TriangleAlert, MoveDown, Grid2X2 } from "lucide-react";
+import { CheckCircle2, RefreshCw, MoreHorizontal, FileText, Mic, Save, Activity, TriangleAlert, Grid2X2 } from "lucide-react";
 
 export default function ProcessingPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const jobId = searchParams.get("jobId");
+
+  const [currentStep, setCurrentStep] = useState(1);
+  const [progress, setProgress] = useState(0);
+  const [pollMessage, setPollMessage] = useState<string>("Waiting for job status...");
+  const hasRedirectedRef = useRef(false);
+
+  useEffect(() => {
+    if (!jobId) {
+      setPollMessage("No job id found. Start a new processing run from the home page.");
+      return;
+    }
+
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    let stopped = false;
+
+    const pollStatus = async () => {
+      if (stopped) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`${apiUrl}/api/pipeline/status/${encodeURIComponent(jobId)}`, { cache: "no-store" });
+        if (res.status === 404) {
+          setPollMessage("Status endpoint not found on backend. Check API routes and server restart.");
+          return;
+        }
+        if (!res.ok) {
+          throw new Error(`Status request failed (${res.status})`);
+        }
+
+        const data = await res.json();
+        const nextStep = Number(data.current_step ?? 1);
+        const nextProgress = Number(data.progress ?? 0);
+
+        setCurrentStep(Math.min(8, Math.max(1, nextStep)));
+        setProgress(Math.min(100, Math.max(0, nextProgress)));
+        setPollMessage("Live pipeline status connected.");
+      } catch (error) {
+        console.error("Polling error", error);
+        setPollMessage("Waiting for backend status...");
+      }
+    };
+
+    pollStatus();
+    const interval = setInterval(async () => {
+      await pollStatus();
+    }, 1200);
+
+    return () => {
+      stopped = true;
+      clearInterval(interval);
+    };
+  }, [jobId]);
+
+  useEffect(() => {
+    if (progress < 100 || hasRedirectedRef.current) {
+      return;
+    }
+
+    hasRedirectedRef.current = true;
+    setPollMessage("Processing complete. Redirecting to library...");
+
+    const timeout = setTimeout(() => {
+      router.push("/library");
+    }, 900);
+
+    return () => clearTimeout(timeout);
+  }, [progress, router]);
+
   const pipelineSteps = [
-    { number: 1, title: "Fetch & Download", description: "Source media verified and ingested.", status: "DONE" as const, icon: <CheckCircle2 className="w-4 h-4" /> },
-    { number: 2, title: "Split Audio", description: "Acoustic segmentation completed.", status: "DONE" as const, icon: <CheckCircle2 className="w-4 h-4" /> },
-    { number: 3, title: "Parallel Transcription", description: "Neural engine processing 12 concurrent streams.", status: "ACTIVE" as const, icon: <RefreshCw className="w-4 h-4 animate-spin-slow" /> },
-    { number: 4, title: "Timestamp Selection", description: "Waiting for data sequences.", status: "PENDING" as const, icon: <MoreHorizontal className="w-4 h-4" /> },
-    { number: 5, title: "Frame Extraction", description: "Visual keyframing logic queued.", status: "PENDING" as const, icon: <Grid2X2 className="w-4 h-4" /> },
-    { number: 6, title: "Script Generation", description: "Narrative LLM synthesis.", status: "PENDING" as const, icon: <FileText className="w-4 h-4" /> },
-    { number: 7, title: "TTS Synthesis", description: "Cloning selected voice profile.", status: "PENDING" as const, icon: <Mic className="w-4 h-4" /> },
-    { number: 8, title: "Persistence", description: "Final asset assembly and storage.", status: "PENDING" as const, icon: <Save className="w-4 h-4" /> },
+    { title: "Fetch & Download", description: "Source media verified and ingested.", icon: <CheckCircle2 className="w-4 h-4" /> },
+    { title: "Split Audio", description: "Acoustic segmentation completed.", icon: <CheckCircle2 className="w-4 h-4" /> },
+    { title: "Parallel Transcription", description: "Neural engine processing 12 concurrent streams.", icon: <RefreshCw className="w-4 h-4 animate-spin-slow" /> },
+    { title: "Timestamp Selection", description: "Waiting for data sequences.", icon: <MoreHorizontal className="w-4 h-4" /> },
+    { title: "Frame Extraction", description: "Visual keyframing logic queued.", icon: <Grid2X2 className="w-4 h-4" /> },
+    { title: "Script Generation", description: "Narrative LLM synthesis.", icon: <FileText className="w-4 h-4" /> },
+    { title: "TTS Synthesis", description: "Cloning selected voice profile.", icon: <Mic className="w-4 h-4" /> },
+    { title: "Persistence", description: "Final asset assembly and storage.", icon: <Save className="w-4 h-4" /> },
   ];
 
   return (
@@ -35,17 +110,21 @@ export default function ProcessingPage() {
             </h1>
             <div className="flex items-center gap-2 text-gray-500 dark:text-[#8e95b3] font-medium text-sm">
               <RefreshCw className="w-4 h-4 animate-spin-slow text-blue-500 dark:text-blue-400" />
-              Step 3 of 8: Transcribing 12 audio chunks concurrently...
+              Step {currentStep} of 8: {pipelineSteps[Math.min(currentStep - 1, 7)]?.title}...
             </div>
+            <div className="text-xs text-gray-500 dark:text-[#8e95b3]">{pollMessage}</div>
           </section>
 
           <section className="w-full bg-white/80 dark:bg-[#12141c]/80 backdrop-blur-md rounded-[20px] p-8 border border-gray-200 dark:border-white/5 shadow-xl flex flex-col gap-5">
             <div className="flex justify-between items-baseline">
               <span className="text-sm font-semibold text-gray-500 dark:text-gray-400 tracking-wide">Global Progress</span>
-              <span className="text-2xl font-bold text-gray-900 dark:text-white tracking-widest pl-2">42<span className="text-base text-gray-500">%</span></span>
+              <span className="text-2xl font-bold text-gray-900 dark:text-white tracking-widest pl-2">{progress}<span className="text-base text-gray-500">%</span></span>
             </div>
             <div className="w-full h-2.5 bg-gray-200 dark:bg-white/5 rounded-full overflow-hidden shadow-inner">
-              <div className="h-full w-[42%] bg-gradient-to-r from-blue-500 to-indigo-500 dark:from-blue-600 dark:to-indigo-400 rounded-full shadow-[0_0_15px_rgba(59,130,246,0.3)] dark:shadow-[0_0_15px_rgba(59,130,246,0.6)] relative">
+              <div
+                className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 dark:from-blue-600 dark:to-indigo-400 rounded-full shadow-[0_0_15px_rgba(59,130,246,0.3)] dark:shadow-[0_0_15px_rgba(59,130,246,0.6)] relative"
+                style={{ width: `${progress}%` }}
+              >
                 <div className="absolute top-0 right-0 bottom-0 left-0 bg-gradient-to-r from-white/0 via-white/40 dark:via-white/20 to-white/0 w-1/2 -rotate-12 transform scale-150 animate-shimmer"></div>
               </div>
             </div>
@@ -73,9 +152,16 @@ export default function ProcessingPage() {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {pipelineSteps.map((step) => (
-                <PipelineStepCard key={step.number} step={step} />
-              ))}
+              {pipelineSteps.map((step, index) => {
+                const stepNumber = index + 1;
+                let status: "PENDING" | "ACTIVE" | "DONE" = "PENDING";
+                
+                if (stepNumber < currentStep) status = "DONE";
+                else if (stepNumber === currentStep) status = "ACTIVE";
+                else status = "PENDING";
+
+                return <PipelineStepCard key={stepNumber} step={{ ...step, number: stepNumber, status }} />;
+              })}
             </div>
           </section>
 

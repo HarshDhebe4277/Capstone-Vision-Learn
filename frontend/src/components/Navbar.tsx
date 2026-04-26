@@ -40,6 +40,7 @@ export default function Navbar({ activePage = "Dashboard", customTabs }: { activ
           <input 
             type="text" 
             placeholder="Quick search..." 
+            suppressHydrationWarning
             className="w-72 bg-gray-100/60 dark:bg-[#1a1c23]/60 border border-gray-200 dark:border-white/5 rounded-xl py-2.5 pl-10 pr-4 text-sm text-gray-800 dark:text-gray-200 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all placeholder:text-gray-400 dark:placeholder:text-gray-600 shadow-inner"
           />
         </div>

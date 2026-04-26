@@ -15,7 +15,7 @@ export default function PipelineStepCard({ step }: { step: PipelineStep }) {
   return (
     <div className={`p-5 rounded-xl border transition-all duration-300 relative ${
       isActive 
-        ? "bg-blue-50 dark:bg-[#161a2b] border-blue-500/50 shadow-[0_0_20px_rgba(59,130,246,0.15)] glow-active" 
+        ? "bg-blue-50 dark:bg-[#161a2b] active" 
         : isDone 
           ? "bg-white/80 dark:bg-[#12141c]/80 border-gray-200 dark:border-white/5 opacity-80" 
           : "bg-gray-50 dark:bg-[#12141c]/50 border-transparent opacity-60"

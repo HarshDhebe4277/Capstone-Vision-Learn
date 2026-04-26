@@ -7,7 +7,7 @@ import FeatureCard from "@/components/FeatureCard";
 import StatsBar from "@/components/StatsBar";
 import Footer from "@/components/Footer";
 import { UploadCloud, FileText, Image as ImageIcon, Clapperboard, ScanText, Languages } from "lucide-react";
-import ProcessingPage from "./processing/page"
+
 
 export default function Home() {
   const router = useRouter();
@@ -18,8 +18,10 @@ export default function Home() {
   const [notesFile, setNotesFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
+  const makeJobId = (prefix: string) => `${prefix}_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`;
+
   // --- API Connection Logic ---
-  const handleProcessVideo = async () => {
+  const handleProcessVideo = () => {
     if (!youtubeUrl && !videoFile) {
       alert("Please provide a YouTube URL or a video file.");
       return;
@@ -27,36 +29,47 @@ export default function Home() {
 
     setIsProcessing(true);
 
-    try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-      if (youtubeUrl) {
-        // Hit the YouTube Endpoint
-        await fetch(`${apiUrl}/api/pipeline/process`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ youtube_url: youtubeUrl }),
-        });
-      } else if (videoFile) {
-        // Hit the Local Video Upload Endpoint
-        const formData = new FormData();
-        formData.append("file", videoFile);
-        await fetch(`${apiUrl}/api/pipeline/upload`, {
-          method: "POST",
-          body: formData,
-        });
-      }
+    if (youtubeUrl) {
+      const jobId = makeJobId("vid");
+      router.push(`/processing?jobId=${encodeURIComponent(jobId)}`);
 
-      router.push("/library");
+      void fetch(`${apiUrl}/api/pipeline/process`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ youtube_url: youtubeUrl, lecture_id: jobId }),
+      }).then((res) => {
+        if (!res.ok) {
+          console.error("Failed to start video pipeline", res.status);
+        }
+      }).catch((error) => {
+        console.error("Error starting video pipeline:", error);
+      });
+      return;
+    }
 
-    } catch (error) {
-      console.error("Error starting video pipeline:", error);
-      alert("Failed to connect to the backend server.");
-      setIsProcessing(false);
+    if (videoFile) {
+      const jobId = makeJobId("upl");
+      const formData = new FormData();
+      formData.append("file", videoFile);
+      formData.append("lecture_id", jobId);
+      router.push(`/processing?jobId=${encodeURIComponent(jobId)}`);
+
+      void fetch(`${apiUrl}/api/pipeline/upload`, {
+        method: "POST",
+        body: formData,
+      }).then((res) => {
+        if (!res.ok) {
+          console.error("Failed to start local upload pipeline", res.status);
+        }
+      }).catch((error) => {
+        console.error("Error starting local upload pipeline:", error);
+      });
     }
   };
 
-  const handleProcessNotes = async () => {
+  const handleProcessNotes = () => {
     if (!notesFile) {
       alert("Please upload a PDF or Image file.");
       return;
@@ -64,30 +77,25 @@ export default function Home() {
 
     setIsProcessing(true);
 
-    try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-      const formData = new FormData();
-      formData.append("file", notesFile);
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    const jobId = makeJobId("note");
+    const formData = new FormData();
+    formData.append("file", notesFile);
+    formData.append("note_id", jobId);
 
-      // Hit the Notes Endpoint
-      await fetch(`${apiUrl}/api/notes/process`, {
-        method: "POST",
-        body: formData,
-      });
+    router.push(`/processing?jobId=${encodeURIComponent(jobId)}`);
 
-      // Send the user to the processing screen
-      router.push("/library");
-
-    } catch (error) {
+    void fetch(`${apiUrl}/api/notes/process`, {
+      method: "POST",
+      body: formData,
+    }).then((res) => {
+      if (!res.ok) {
+        console.error("Failed to start notes pipeline", res.status);
+      }
+    }).catch((error) => {
       console.error("Error starting notes pipeline:", error);
-      alert("Failed to connect to the backend server.");
-      setIsProcessing(false);
-    }
+    });
   };
-
-  if (isProcessing) {
-    return <ProcessingPage />;
-  }
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden font-sans">
@@ -155,6 +163,7 @@ export default function Home() {
                   <button
                     onClick={handleProcessVideo}
                     disabled={isProcessing}
+                    suppressHydrationWarning
                     className="w-full py-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-500 dark:to-indigo-500 hover:from-blue-500 hover:to-indigo-500 dark:hover:from-blue-400 dark:hover:to-indigo-400 text-white font-bold tracking-wide shadow-[0_4px_15px_rgba(59,130,246,0.2)] dark:shadow-[0_4px_20px_rgba(59,130,246,0.3)] hover:shadow-[0_8px_20px_rgba(59,130,246,0.3)] dark:hover:shadow-[0_8px_25px_rgba(59,130,246,0.5)] transition-all transform hover:-translate-y-1 active:translate-y-0 text-sm disabled:opacity-50"
                   >
                     {isProcessing ? "STARTING PIPELINE..." : "PROCESS VIDEO"}
@@ -206,6 +215,7 @@ export default function Home() {
                   <button
                     onClick={handleProcessNotes}
                     disabled={isProcessing}
+                    suppressHydrationWarning
                     className="w-full py-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-500 dark:to-indigo-500 hover:from-blue-500 hover:to-indigo-500 dark:hover:from-blue-400 dark:hover:to-indigo-400 text-white font-bold tracking-wide shadow-[0_4px_15px_rgba(59,130,246,0.2)] dark:shadow-[0_4px_20px_rgba(59,130,246,0.3)] hover:shadow-[0_8px_20px_rgba(59,130,246,0.3)] dark:hover:shadow-[0_8px_25px_rgba(59,130,246,0.5)] transition-all transform hover:-translate-y-1 active:translate-y-0 text-sm disabled:opacity-50"
                   >
                     {isProcessing ? "STARTING PIPELINE..." : "PROCESS NOTES"}
