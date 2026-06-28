@@ -22,6 +22,25 @@ load_dotenv(override=True)
 
 from api.router import api_router
 
+
+def _get_cors_origins() -> list[str]:
+    """Parse CORS origins from env and include safe local-dev defaults."""
+    raw = os.getenv("CORS_ORIGINS", "")
+    parsed = [origin.strip() for origin in raw.split(",") if origin.strip()]
+    local_defaults = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3001",
+    ]
+
+    # Keep user-provided order, then append any missing local defaults.
+    origins = parsed.copy()
+    for origin in local_defaults:
+        if origin not in origins:
+            origins.append(origin)
+    return origins
+
 app = FastAPI(
     title="Vision-Learn AI",
     description=(
@@ -36,7 +55,7 @@ app = FastAPI(
 # CORS — allow the Next.js frontend on port 3000
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.getenv("CORS_ORIGINS", "http://localhost:3000").split(","),
+    allow_origins=_get_cors_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

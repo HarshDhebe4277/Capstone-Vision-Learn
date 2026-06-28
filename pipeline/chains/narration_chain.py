@@ -74,6 +74,7 @@ This creates natural breakpoints for listeners.
 
 7. USE THE VISUAL CONTEXT — for each key moment provided, reference what is visible at that timestamp. \
    Never narrate a key moment without describing what is on the board or slide.
+
 """
 
 _HUMAN_TEMPLATE = """\

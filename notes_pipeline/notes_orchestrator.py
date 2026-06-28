@@ -1,5 +1,6 @@
 import asyncio
 import os
+import json
 from pathlib import Path
 from typing import Dict, Any
 
@@ -11,7 +12,15 @@ import uuid
 
 STORAGE = Path(os.getenv("STORAGE_PATH", "./storage")).resolve()
 
-async def run_notes_pipeline(file_path: str) -> Dict[str, Any]:
+
+def _update_status(workdir: Path, step: int, progress: int) -> None:
+    status_path = workdir / "status.json"
+    status_path.write_text(
+        json.dumps({"current_step": step, "progress": progress}),
+        encoding="utf-8",
+    )
+
+async def run_notes_pipeline(file_path: str, note_id: str | None = None) -> Dict[str, Any]:
     """
     Run the pipeline to convert notes (PDF or Image) to an audio narration.
     """
@@ -19,9 +28,10 @@ async def run_notes_pipeline(file_path: str) -> Dict[str, Any]:
     if not source_path.exists():
         raise FileNotFoundError(f"File not found: {source_path}")
         
-    note_id = f"note_{uuid.uuid4().hex[:8]}"
+    note_id = note_id or f"note_{uuid.uuid4().hex[:8]}"
     workdir = STORAGE / note_id
     workdir.mkdir(parents=True, exist_ok=True)
+    _update_status(workdir, 1, 15)
     
     print(f"\n[Notes Orchestrator] Starting pipeline for {source_path.name} (id={note_id})")
     
@@ -40,6 +50,7 @@ async def run_notes_pipeline(file_path: str) -> Dict[str, Any]:
     print(f"[Step 1] Extracted {len(image_paths)} pages.")
     
     # Step 2: Generate Script with Vision LLM
+    _update_status(workdir, 2, 55)
     vision_model_name = os.getenv("MISTRAL_VISION_MODEL", "pixtral-12b-latest")
     print(f"[Step 2] Generating pedagogical script via {vision_model_name} for {len(image_paths)} pages...")
     script_path = workdir / "script.txt"
@@ -48,6 +59,7 @@ async def run_notes_pipeline(file_path: str) -> Dict[str, Any]:
     print(f"[Step 2] Script generated ({len(script)} chars)")
     
     # Step 3: Synthesis
+    _update_status(workdir, 3, 85)
     print("[Step 3] Synthesising script with Edge TTS...")
     narration_path = workdir / "narration.mp3"
     await synthesize_narration(script, narration_path)
@@ -62,6 +74,8 @@ async def run_notes_pipeline(file_path: str) -> Dict[str, Any]:
         "narration": str(narration_path),
         "source": str(source_path),
     }
+
+    _update_status(workdir, 4, 100)
     
     print(f"\n[Notes Orchestrator] Pipeline complete! All artifacts in {workdir}\n")
     return result

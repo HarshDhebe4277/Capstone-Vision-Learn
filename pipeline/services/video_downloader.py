@@ -84,7 +84,7 @@ async def download_audio(youtube_url: str, out_path: Path) -> Path:
 
 async def download_video(youtube_url: str, out_path: Path) -> Path:
     """
-    Download the best quality video file (MP4 format).
+    Download a single video file that already includes audio.
     Runs in a thread executor so it is compatible with any asyncio event loop.
     
     Returns the path to the downloaded video file.
@@ -97,7 +97,9 @@ async def download_video(youtube_url: str, out_path: Path) -> Path:
         _run_subprocess,
         [
             ytdlp,
-            "-f", "bestvideo[ext=mp4]",
+            # Keep yt-dlp usage to one video download, but require an audio track
+            # so downstream local ffmpeg extraction can work reliably.
+            "-f", "best[ext=mp4][acodec!=none]/best[acodec!=none]",
             "--no-playlist",
             "-o", str(out_path),
             youtube_url,

@@ -18,6 +18,28 @@ from pipeline.orchestrator import run_pipeline, run_pipeline_local
 router = APIRouter(prefix="/api/pipeline", tags=["Pipeline"])
 
 
+@router.get("/status/{job_id}", summary="Get the status of a running pipeline job")
+async def get_pipeline_status(job_id: str):
+    """
+    Returns current JSON status saved by the orchestrator in the storage directory.
+    If the job does not exist yet, returns step 1 with 0 progress.
+    """
+    import json
+    from pathlib import Path
+    
+    storage_path = Path(os.getenv("STORAGE_PATH", "./storage")).resolve()
+    status_file = storage_path / job_id / "status.json"
+    
+    if status_file.exists():
+        try:
+            status_data = json.loads(status_file.read_text(encoding="utf-8"))
+            return status_data
+        except Exception:
+            pass
+            
+    return {"current_step": 1, "progress": 0}
+
+
 def _build_response(result: dict) -> PipelineRunResponse:
     return PipelineRunResponse(
         video_id=result["video_id"],
@@ -57,6 +79,7 @@ async def process_local_path(
     try:
         result = await run_pipeline_local(
             file_path=request.file_path,
+            lecture_id=request.lecture_id,
             db_session=db,
         )
         return _build_response(result)
@@ -68,6 +91,7 @@ async def process_local_path(
 @router.post("/upload", response_model=PipelineRunResponse, summary="Upload a video/audio file and process")
 async def upload_and_process(
     file: UploadFile = File(..., description="Video (mp4/mkv/avi/mov) or audio (mp3/wav/m4a) file"),
+    lecture_id: str | None = Form(None),
     db: Session = Depends(get_db),
 ):
     """
@@ -81,6 +105,7 @@ async def upload_and_process(
         saved_path = save_upload(contents, file.filename or "upload.mp4")
         result = await run_pipeline_local(
             file_path=str(saved_path),
+            lecture_id=lecture_id,
             db_session=db,
         )
         return _build_response(result)

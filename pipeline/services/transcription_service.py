@@ -36,7 +36,16 @@ async def _transcribe_single_chunk(
         )
 
     async with sem:  # Limit concurrent API calls
-        response = await loop.run_in_executor(None, _call_api)
+        try:
+            response = await loop.run_in_executor(None, _call_api)
+        except Exception as exc:
+            # Some chunks can be undecodable by upstream API (e.g. tiny/corrupt tail chunk).
+            # Skip those chunks instead of failing the entire job.
+            chunk_size = chunk_path.stat().st_size if chunk_path.exists() else 0
+            print(
+                f"[Step 3] Skipping chunk {chunk_path.name} ({chunk_size} bytes) due to transcription error: {exc}"
+            )
+            return []
 
     segments: List[Dict[str, Any]] = []
     for seg in response.segments or []:
@@ -83,6 +92,11 @@ async def transcribe_audio_parallel(
     all_segments.sort(key=lambda s: s["start"])
 
     full_text = " ".join(s["text"] for s in all_segments)
+
+    if not all_segments:
+        raise RuntimeError(
+            "Transcription failed: all audio chunks were rejected by the API as undecodable"
+        )
 
     formatted_for_llm = "\n".join(
         f"[{int(s['start']) // 60:02d}:{int(s['start']) % 60:02d}] {s['text']}"

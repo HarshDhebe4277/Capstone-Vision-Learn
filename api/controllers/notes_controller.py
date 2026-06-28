@@ -1,6 +1,6 @@
 import os
 import shutil
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from pathlib import Path
 from notes_pipeline.notes_orchestrator import run_notes_pipeline
 
@@ -10,7 +10,7 @@ TEMP_DIR = Path("./storage/temp_notes")
 TEMP_DIR.mkdir(parents=True, exist_ok=True)
 
 @router.post("/process")
-async def upload_and_process_notes(file: UploadFile = File(...)):
+async def upload_and_process_notes(file: UploadFile = File(...), note_id: str | None = Form(None)):
     """Upload a PDF or Image note to process into an audio narration."""
     if not file.filename:
         raise HTTPException(status_code=400, detail="No filename provided")
@@ -25,7 +25,7 @@ async def upload_and_process_notes(file: UploadFile = File(...)):
         
     try:
         # Run pipeline
-        result = await run_notes_pipeline(str(temp_path))
+        result = await run_notes_pipeline(str(temp_path), note_id=note_id)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Notes processing failed: {str(e)}")
