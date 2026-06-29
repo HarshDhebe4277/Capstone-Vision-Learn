@@ -45,7 +45,12 @@ export default function LibrarySidebar({ selectedLecture, onSelectLecture }: { s
   }, []);
 
   return (
-    <aside className="w-full lg:w-80 flex-shrink-0 flex flex-col gap-6">
+    <aside 
+      data-nav-section="sidebar"
+      data-nav-order="2"
+      data-nav-name="Narration Library"
+      className="w-full lg:w-80 flex-shrink-0 flex flex-col gap-6"
+    >
       <h2 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">My Library</h2>
 
       {/* Search Bar */}
@@ -54,15 +59,39 @@ export default function LibrarySidebar({ selectedLecture, onSelectLecture }: { s
         <input
           type="text"
           placeholder="Filter courses..."
+          data-a11y-id="library-filter"
+          data-a11y-label="Filter courses"
+          data-a11y-description="Type text to filter narration list"
           className="w-full bg-white dark:bg-[#1a1c23]/60 border border-gray-200 dark:border-white/5 rounded-xl py-3 pl-10 pr-4 text-sm text-gray-800 dark:text-gray-200 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all placeholder:text-gray-500 dark:placeholder:text-[#6c7293] shadow-inner"
         />
       </div>
 
       {/* Tabs */}
       <div className="flex items-center gap-2 border-b border-gray-200 dark:border-white/5 pb-4">
-        <button className="px-4 py-1.5 rounded-full bg-gray-200 dark:bg-white/10 text-gray-800 dark:text-white text-xs font-semibold tracking-wide">All</button>
-        <button className="px-4 py-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-white/5 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white transition-colors text-xs font-medium tracking-wide">Video</button>
-        <button className="px-4 py-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-white/5 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white transition-colors text-xs font-medium tracking-wide">Notes</button>
+        <button 
+          data-a11y-id="library-tab-all"
+          data-a11y-label="All items"
+          data-a11y-description="Filter list to show all items"
+          className="px-4 py-1.5 rounded-full bg-gray-200 dark:bg-white/10 text-gray-800 dark:text-white text-xs font-semibold tracking-wide"
+        >
+          All
+        </button>
+        <button 
+          data-a11y-id="library-tab-video"
+          data-a11y-label="Videos filter"
+          data-a11y-description="Filter list to show only video items"
+          className="px-4 py-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-white/5 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white transition-colors text-xs font-medium tracking-wide"
+        >
+          Video
+        </button>
+        <button 
+          data-a11y-id="library-tab-notes"
+          data-a11y-label="Notes filter"
+          data-a11y-description="Filter list to show only notes items"
+          className="px-4 py-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-white/5 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white transition-colors text-xs font-medium tracking-wide"
+        >
+          Notes
+        </button>
       </div>
 
       {/* List / Empty State */}
@@ -82,7 +111,18 @@ export default function LibrarySidebar({ selectedLecture, onSelectLecture }: { s
             <div
               key={item.id || i}
               onClick={() => onSelectLecture(item)}
-              className={`flex items-stretch gap-4 p-4 rounded-xl cursor-pointer transition-all ${selectedLecture?.id === item.id
+              tabIndex={0}
+              role="button"
+              data-a11y-id={`library-item-${item.id || i}`}
+              data-a11y-label={`Library item: ${item.title || "Untitled Narration"}`}
+              data-a11y-description={`Source type: ${item.source_type || "Media"}, status: ${item.status || "Ready"}. Click or press Enter to load this lecture into the player.`}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onSelectLecture(item);
+                }
+              }}
+              className={`flex items-stretch gap-4 p-4 rounded-xl cursor-pointer transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 ${selectedLecture?.id === item.id
                 ? "bg-blue-500 text-white shadow-lg"
                 : "bg-white dark:bg-[#181a24] hover:bg-gray-50 dark:hover:bg-[#1e2029] border border-gray-100 dark:border-white/5"
                 }`}

@@ -18,6 +18,7 @@ export const metadata: Metadata = {
 };
 
 import { ThemeProvider } from "@/components/ThemeProvider";
+import KeyboardNavigation from "@/components/accessibility/KeyboardNavigation";
 
 export default function RootLayout({
   children,
@@ -33,8 +34,10 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-gray-50 dark:bg-[#0d0f14] text-gray-900 dark:text-[#f3f4f6]">
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
           {children}
+          <KeyboardNavigation />
         </ThemeProvider>
       </body>
     </html>
   );
 }
+

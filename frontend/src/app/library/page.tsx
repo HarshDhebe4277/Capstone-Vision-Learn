@@ -13,7 +13,7 @@ export default function LibraryPage() {
   const [selectedLecture, setSelectedLecture] = useState<any>(null);
 
   return (
-    <div className="min-h-screen flex flex-col relative font-sans">
+    <div data-page-name="Library" className="min-h-screen flex flex-col relative font-sans">
       <div className="absolute inset-0 bg-dot-pattern z-0 opacity-100 pointer-events-none"></div>
 
       <div className="z-10 flex flex-col min-h-screen flex-grow">
@@ -30,7 +30,12 @@ export default function LibraryPage() {
             onSelectLecture={setSelectedLecture}
           />
 
-          <div className="flex-grow flex flex-col gap-6 min-w-[300px] max-w-4xl mx-auto w-full border-x border-gray-200 dark:border-white/5 px-4 lg:px-8">
+          <div 
+            data-nav-section="player"
+            data-nav-order="3"
+            data-nav-name="Media and Insights"
+            className="flex-grow flex flex-col gap-6 min-w-[300px] max-w-4xl mx-auto w-full border-x border-gray-200 dark:border-white/5 px-4 lg:px-8"
+          >
             <div className="flex-shrink-0">
               {/* Pass the selected lecture data to the Player */}
               <MediaPlayer selectedLecture={selectedLecture} />
@@ -42,7 +47,12 @@ export default function LibraryPage() {
 
         </main>
 
-        <div className="w-full mx-auto px-6 md:px-12 pb-4 z-20 absolute bottom-0 bg-white/80 dark:bg-[#0d0f14]/80 backdrop-blur-sm pt-4 border-t border-gray-200 dark:border-white/5">
+        <div 
+          data-nav-section="footer"
+          data-nav-order="5"
+          data-nav-name="Footer Links"
+          className="w-full mx-auto px-6 md:px-12 pb-4 z-20 absolute bottom-0 bg-white/80 dark:bg-[#0d0f14]/80 backdrop-blur-sm pt-4 border-t border-gray-200 dark:border-white/5"
+        >
           <Footer />
         </div>
       </div>

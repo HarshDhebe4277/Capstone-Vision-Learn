@@ -98,7 +98,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden font-sans">
+    <div data-page-name="Home" className="min-h-screen flex flex-col relative overflow-hidden font-sans">
       <div className="absolute inset-0 bg-dot-pattern z-0 pointer-events-none"></div>
 
       <div className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-blue-300/20 dark:bg-blue-600/10 rounded-full blur-[120px] pointer-events-none z-0"></div>
@@ -121,116 +121,155 @@ export default function Home() {
 
           <section className="grid justify-center md:grid-cols-2 gap-8 w-full z-20">
             {/* VIDEO NARRATION CARD */}
-            <FeatureCard title="Video Narration" icon={<Clapperboard className="w-6 h-6" />}>
-              <div className="flex flex-col gap-8 h-full">
-                <div className="flex flex-col gap-3">
-                  <label className="text-[10px] font-bold tracking-widest text-gray-500 dark:text-[#6c7293] uppercase">Source Link</label>
-                  <input
-                    type="url"
-                    value={youtubeUrl}
-                    onChange={(e) => {
-                      setYoutubeUrl(e.target.value);
-                      setVideoFile(null); // Clear file if URL is typed
-                    }}
-                    placeholder="https://youtube.com/watch?v=..."
-                    className="w-full bg-gray-50 dark:bg-[#1e2029]/50 border border-gray-200 dark:border-white/5 shadow-inner rounded-xl px-4 py-3.5 text-sm text-gray-800 dark:text-gray-200 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all placeholder:text-gray-400 dark:placeholder:text-[#555970]"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-3 flex-grow">
-                  <label className="text-[10px] font-bold tracking-widest text-gray-500 dark:text-[#6c7293] uppercase">Local Capture</label>
-                  {/* Invisible file input wrapped in the dropzone styling */}
-                  <div className="relative h-full min-h-[140px] border border-dashed border-gray-200 dark:border-white/10 rounded-xl bg-gray-50 dark:bg-[#1e2029]/30 hover:bg-white dark:hover:bg-[#1e2029]/60 hover:border-blue-300 dark:hover:border-blue-500/40 transition-all cursor-pointer group flex flex-col items-center justify-center py-8 gap-4 shadow-sm overflow-hidden">
+            <div 
+              data-nav-section="video-card" 
+              data-nav-order="2" 
+              data-nav-name="Video Narration"
+              className="h-full"
+            >
+              <FeatureCard title="Video Narration" icon={<Clapperboard className="w-6 h-6" />}>
+                <div className="flex flex-col gap-8 h-full">
+                  <div className="flex flex-col gap-3">
+                    <label className="text-[10px] font-bold tracking-widest text-gray-500 dark:text-[#6c7293] uppercase">Source Link</label>
                     <input
-                      type="file"
-                      accept="video/*,audio/*"
+                      type="url"
+                      value={youtubeUrl}
                       onChange={(e) => {
-                        setVideoFile(e.target.files?.[0] || null);
-                        setYoutubeUrl(""); // Clear URL if file is chosen
+                        setYoutubeUrl(e.target.value);
+                        setVideoFile(null); // Clear file if URL is typed
                       }}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                      data-a11y-id="youtube-url-input"
+                      data-a11y-label="YouTube URL Input"
+                      data-a11y-description="Type or paste a YouTube link here, then confirm with the process button below."
+                      placeholder="https://youtube.com/watch?v=..."
+                      className="w-full bg-gray-50 dark:bg-[#1e2029]/50 border border-gray-200 dark:border-white/5 shadow-inner rounded-xl px-4 py-3.5 text-sm text-gray-800 dark:text-gray-200 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all placeholder:text-gray-400 dark:placeholder:text-[#555970]"
                     />
-                    <div className="bg-white dark:bg-[#242735] p-3 rounded-full group-hover:bg-gray-50 dark:group-hover:bg-[#2b2e3d] group-hover:scale-105 transition-all text-gray-400 group-hover:text-blue-500 dark:group-hover:text-blue-400 shadow-sm border border-gray-100 dark:border-white/5">
-                      <FileText className="w-5 h-5" />
+                  </div>
+
+                  <div className="flex flex-col gap-3 flex-grow">
+                    <label className="text-[10px] font-bold tracking-widest text-gray-500 dark:text-[#6c7293] uppercase">Local Capture</label>
+                    {/* Invisible file input wrapped in the dropzone styling */}
+                    <div className="relative h-full min-h-[140px] border border-dashed border-gray-200 dark:border-white/10 rounded-xl bg-gray-50 dark:bg-[#1e2029]/30 hover:bg-white dark:hover:bg-[#1e2029]/60 hover:border-blue-300 dark:hover:border-blue-500/40 transition-all cursor-pointer group flex flex-col items-center justify-center py-8 gap-4 shadow-sm overflow-hidden focus-within-kb">
+                      <input
+                        type="file"
+                        accept="video/*,audio/*"
+                        data-a11y-id="video-file-input"
+                        data-a11y-label="Video file upload dropzone"
+                        data-a11y-description="Upload a video file from your local disk."
+                        onChange={(e) => {
+                          setVideoFile(e.target.files?.[0] || null);
+                          setYoutubeUrl(""); // Clear URL if file is chosen
+                        }}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                      />
+                      <div className="bg-white dark:bg-[#242735] p-3 rounded-full group-hover:bg-gray-50 dark:group-hover:bg-[#2b2e3d] group-hover:scale-105 transition-all text-gray-400 group-hover:text-blue-500 dark:group-hover:text-blue-400 shadow-sm border border-gray-100 dark:border-white/5">
+                        <FileText className="w-5 h-5" />
+                      </div>
+                      <span className="text-sm font-semibold text-gray-500 dark:text-[#8e95b3] group-hover:text-gray-700 dark:group-hover:text-gray-200 z-0 text-center px-4">
+                        {videoFile ? videoFile.name : "Drop MP4/MOV or Click to Browse"}
+                      </span>
                     </div>
-                    <span className="text-sm font-semibold text-gray-500 dark:text-[#8e95b3] group-hover:text-gray-700 dark:group-hover:text-gray-200 z-0 text-center px-4">
-                      {videoFile ? videoFile.name : "Drop MP4/MOV or Click to Browse"}
-                    </span>
+                  </div>
+
+                  <div className="mt-2 text-center w-full">
+                    <button
+                      onClick={handleProcessVideo}
+                      disabled={isProcessing}
+                      suppressHydrationWarning
+                      data-a11y-id="process-video-button"
+                      data-a11y-label="Process Video"
+                      data-a11y-description="Starts processing the video from link or file upload."
+                      className="w-full py-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-500 dark:to-indigo-500 hover:from-blue-500 hover:to-indigo-500 dark:hover:from-blue-400 dark:hover:to-indigo-400 text-white font-bold tracking-wide shadow-[0_4px_15px_rgba(59,130,246,0.2)] dark:shadow-[0_4px_20px_rgba(59,130,246,0.3)] hover:shadow-[0_8px_20px_rgba(59,130,246,0.3)] dark:hover:shadow-[0_8px_25px_rgba(59,130,246,0.5)] transition-all transform hover:-translate-y-1 active:translate-y-0 text-sm disabled:opacity-50 focus:outline-none"
+                    >
+                      {isProcessing ? "STARTING PIPELINE..." : "PROCESS VIDEO"}
+                    </button>
                   </div>
                 </div>
-
-                <div className="mt-2 text-center w-full">
-                  <button
-                    onClick={handleProcessVideo}
-                    disabled={isProcessing}
-                    suppressHydrationWarning
-                    className="w-full py-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-500 dark:to-indigo-500 hover:from-blue-500 hover:to-indigo-500 dark:hover:from-blue-400 dark:hover:to-indigo-400 text-white font-bold tracking-wide shadow-[0_4px_15px_rgba(59,130,246,0.2)] dark:shadow-[0_4px_20px_rgba(59,130,246,0.3)] hover:shadow-[0_8px_20px_rgba(59,130,246,0.3)] dark:hover:shadow-[0_8px_25px_rgba(59,130,246,0.5)] transition-all transform hover:-translate-y-1 active:translate-y-0 text-sm disabled:opacity-50"
-                  >
-                    {isProcessing ? "STARTING PIPELINE..." : "PROCESS VIDEO"}
-                  </button>
-                </div>
-              </div>
-            </FeatureCard>
+              </FeatureCard>
+            </div>
 
             {/* NOTES NARRATION CARD */}
-            <FeatureCard title="Notes Narration" icon={<ImageIcon className="w-6 h-6" />}>
-              <div className="flex flex-col gap-8 h-full">
-                <div className="flex flex-col gap-3 flex-grow">
-                  <label className="text-[10px] font-bold tracking-widest text-gray-500 dark:text-[#6c7293] uppercase">Document Upload</label>
-                  {/* Invisible file input wrapped in the dropzone styling */}
-                  <div className="relative h-full min-h-[180px] border border-dashed border-gray-200 dark:border-white/10 rounded-xl bg-gray-50 dark:bg-[#1e2029]/30 hover:bg-white dark:hover:bg-[#1e2029]/60 hover:border-blue-300 dark:hover:border-blue-500/40 transition-all cursor-pointer group flex flex-col items-center justify-center py-8 gap-4 shadow-sm overflow-hidden">
-                    <input
-                      type="file"
-                      accept=".pdf,image/png,image/jpeg"
-                      onChange={(e) => setNotesFile(e.target.files?.[0] || null)}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                    />
-                    <div className="bg-white dark:bg-[#242735] p-3 rounded-full group-hover:bg-gray-50 dark:group-hover:bg-[#2b2e3d] group-hover:scale-105 transition-all text-gray-400 group-hover:text-blue-500 dark:group-hover:text-blue-400 shadow-sm border border-gray-100 dark:border-white/5">
-                      <UploadCloud className="w-5 h-5" />
+            <div 
+              data-nav-section="notes-card" 
+              data-nav-order="3" 
+              data-nav-name="Notes Narration"
+              className="h-full"
+            >
+              <FeatureCard title="Notes Narration" icon={<ImageIcon className="w-6 h-6" />}>
+                <div className="flex flex-col gap-8 h-full">
+                  <div className="flex flex-col gap-3 flex-grow">
+                    <label className="text-[10px] font-bold tracking-widest text-gray-500 dark:text-[#6c7293] uppercase">Document Upload</label>
+                    {/* Invisible file input wrapped in the dropzone styling */}
+                    <div className="relative h-full min-h-[180px] border border-dashed border-gray-200 dark:border-white/10 rounded-xl bg-gray-50 dark:bg-[#1e2029]/30 hover:bg-white dark:hover:bg-[#1e2029]/60 hover:border-blue-300 dark:hover:border-blue-500/40 transition-all cursor-pointer group flex flex-col items-center justify-center py-8 gap-4 shadow-sm overflow-hidden focus-within-kb">
+                      <input
+                        type="file"
+                        accept=".pdf,image/png,image/jpeg"
+                        data-a11y-id="notes-file-input"
+                        data-a11y-label="Notes file upload dropzone"
+                        data-a11y-description="Upload a PDF document or image file containing notes."
+                        onChange={(e) => setNotesFile(e.target.files?.[0] || null)}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                      />
+                      <div className="bg-white dark:bg-[#242735] p-3 rounded-full group-hover:bg-gray-50 dark:group-hover:bg-[#2b2e3d] group-hover:scale-105 transition-all text-gray-400 group-hover:text-blue-500 dark:group-hover:text-blue-400 shadow-sm border border-gray-100 dark:border-white/5">
+                        <UploadCloud className="w-5 h-5" />
+                      </div>
+                      <span className="text-sm font-semibold text-gray-500 dark:text-[#8e95b3] group-hover:text-gray-700 dark:group-hover:text-gray-200 z-0 text-center px-4">
+                        {notesFile ? notesFile.name : "Drop PDF, PNG or JPG here"}
+                      </span>
                     </div>
-                    <span className="text-sm font-semibold text-gray-500 dark:text-[#8e95b3] group-hover:text-gray-700 dark:group-hover:text-gray-200 z-0 text-center px-4">
-                      {notesFile ? notesFile.name : "Drop PDF, PNG or JPG here"}
-                    </span>
                   </div>
-                </div>
 
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-4 bg-gray-50 dark:bg-[#1e2029]/60 border border-gray-200 dark:border-white/5 rounded-xl px-5 py-3.5 flex-1 shadow-inner hover:border-gray-300 dark:hover:border-white/10 transition-colors">
-                    <ScanText className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
-                    <div className="flex flex-col">
-                      <span className="text-[9px] font-bold tracking-widest text-gray-500 dark:text-[#6c7293] uppercase">Feature</span>
-                      <span className="text-sm font-bold text-gray-800 dark:text-gray-300">OCR Enabled</span>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-4 bg-gray-50 dark:bg-[#1e2029]/60 border border-gray-200 dark:border-white/5 rounded-xl px-5 py-3.5 flex-1 shadow-inner hover:border-gray-300 dark:hover:border-white/10 transition-colors">
+                      <ScanText className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
+                      <div className="flex flex-col">
+                        <span className="text-[9px] font-bold tracking-widest text-gray-500 dark:text-[#6c7293] uppercase">Feature</span>
+                        <span className="text-sm font-bold text-gray-800 dark:text-gray-300">OCR Enabled</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4 bg-gray-50 dark:bg-[#1e2029]/60 border border-gray-200 dark:border-white/5 rounded-xl px-5 py-3.5 flex-1 shadow-inner hover:border-gray-300 dark:hover:border-white/10 transition-colors">
+                      <Languages className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+                      <div className="flex flex-col">
+                        <span className="text-[9px] font-bold tracking-widest text-gray-500 dark:text-[#6c7293] uppercase">Feature</span>
+                        <span className="text-sm font-bold text-gray-800 dark:text-gray-300">Multilingual</span>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4 bg-gray-50 dark:bg-[#1e2029]/60 border border-gray-200 dark:border-white/5 rounded-xl px-5 py-3.5 flex-1 shadow-inner hover:border-gray-300 dark:hover:border-white/10 transition-colors">
-                    <Languages className="w-5 h-5 text-blue-500 dark:text-blue-400" />
-                    <div className="flex flex-col">
-                      <span className="text-[9px] font-bold tracking-widest text-gray-500 dark:text-[#6c7293] uppercase">Feature</span>
-                      <span className="text-sm font-bold text-gray-800 dark:text-gray-300">Multilingual</span>
-                    </div>
-                  </div>
-                </div>
 
-                <div className="mt-2 text-center w-full">
-                  <button
-                    onClick={handleProcessNotes}
-                    disabled={isProcessing}
-                    suppressHydrationWarning
-                    className="w-full py-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-500 dark:to-indigo-500 hover:from-blue-500 hover:to-indigo-500 dark:hover:from-blue-400 dark:hover:to-indigo-400 text-white font-bold tracking-wide shadow-[0_4px_15px_rgba(59,130,246,0.2)] dark:shadow-[0_4px_20px_rgba(59,130,246,0.3)] hover:shadow-[0_8px_20px_rgba(59,130,246,0.3)] dark:hover:shadow-[0_8px_25px_rgba(59,130,246,0.5)] transition-all transform hover:-translate-y-1 active:translate-y-0 text-sm disabled:opacity-50"
-                  >
-                    {isProcessing ? "STARTING PIPELINE..." : "PROCESS NOTES"}
-                  </button>
+                  <div className="mt-2 text-center w-full">
+                    <button
+                      onClick={handleProcessNotes}
+                      disabled={isProcessing}
+                      suppressHydrationWarning
+                      data-a11y-id="process-notes-button"
+                      data-a11y-label="Process Notes"
+                      data-a11y-description="Starts processing notes documents via Optical Character Recognition."
+                      className="w-full py-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-500 dark:to-indigo-500 hover:from-blue-500 hover:to-indigo-500 dark:hover:from-blue-400 dark:hover:to-indigo-400 text-white font-bold tracking-wide shadow-[0_4px_15px_rgba(59,130,246,0.2)] dark:shadow-[0_4px_20px_rgba(59,130,246,0.3)] hover:shadow-[0_8px_20px_rgba(59,130,246,0.3)] dark:hover:shadow-[0_8px_25px_rgba(59,130,246,0.5)] transition-all transform hover:-translate-y-1 active:translate-y-0 text-sm disabled:opacity-50 focus:outline-none"
+                    >
+                      {isProcessing ? "STARTING PIPELINE..." : "PROCESS NOTES"}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </FeatureCard>
+              </FeatureCard>
+            </div>
           </section>
 
-          <section className="w-full pt-4 z-20">
+          <div 
+            data-nav-section="stats-bar" 
+            data-nav-order="4" 
+            data-nav-name="System Metrics"
+            className="w-full pt-4 z-20"
+          >
             <StatsBar />
-          </section>
+          </div>
         </main>
 
-        <div className="max-w-[1200px] w-full mx-auto px-6 md:px-12 pb-8 z-20">
+        <div 
+          data-nav-section="footer" 
+          data-nav-order="5" 
+          data-nav-name="Footer Links"
+          className="max-w-[1200px] w-full mx-auto px-6 md:px-12 pb-8 z-20"
+        >
           <Footer />
         </div>
       </div>

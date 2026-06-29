@@ -11,7 +11,12 @@ export default function ChaptersPanel() {
   ];
 
   return (
-    <aside className="w-full lg:w-72 flex-shrink-0 flex flex-col gap-6">
+    <aside 
+      data-nav-section="chapters"
+      data-nav-order="4"
+      data-nav-name="Lecture Chapters"
+      className="w-full lg:w-72 flex-shrink-0 flex flex-col gap-6"
+    >
       <div className="flex items-center gap-2 text-gray-800 dark:text-gray-300">
         <Bookmark className="w-5 h-5 text-gray-500 dark:text-gray-400" />
         <h3 className="text-xl font-bold tracking-wide">Chapters</h3>
@@ -21,7 +26,19 @@ export default function ChaptersPanel() {
         {chapters.map((chap, i) => (
           <div 
             key={i} 
-            className={`flex items-center gap-4 p-3 rounded-xl cursor-pointer transition-colors ${
+            tabIndex={0}
+            role="button"
+            data-a11y-id={`chapter-${i}`}
+            data-a11y-label={`Chapter: ${chap.title}`}
+            data-a11y-description={`Starts at timestamp ${chap.time}. ${chap.active ? "Currently active chapter." : ""}`}
+            onClick={() => alert(`Selected chapter: ${chap.title}`)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                alert(`Selected chapter: ${chap.title}`);
+              }
+            }}
+            className={`flex items-center gap-4 p-3 rounded-xl cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               chap.active 
                 ? "bg-white dark:bg-white/10 border border-gray-200 dark:border-white/10 shadow-sm dark:shadow-none" 
                 : "bg-gray-50 dark:bg-[#181a24] hover:bg-white dark:hover:bg-white/5 border border-transparent dark:border-white/5"
@@ -34,7 +51,15 @@ export default function ChaptersPanel() {
       </div>
       
       {/* AI Insight Box */}
-      <div className="mt-8 bg-gradient-to-br from-blue-50 to-white dark:from-[#1b1f33] dark:to-[#12141c] rounded-2xl p-6 border border-blue-100 dark:border-white/5 shadow-xl relative overflow-hidden group hover:border-blue-300 dark:hover:border-blue-500/20 transition-all cursor-crosshair">
+      <div 
+        tabIndex={0}
+        role="region"
+        aria-label="AI Insight"
+        data-a11y-id="ai-insight-box"
+        data-a11y-label="AI Insight Box"
+        data-a11y-description="This session highlights 3 key areas you struggled with previously. Focus on the Superposition chapter."
+        className="mt-8 bg-gradient-to-br from-blue-50 to-white dark:from-[#1b1f33] dark:to-[#12141c] rounded-2xl p-6 border border-blue-100 dark:border-white/5 shadow-xl relative overflow-hidden group hover:border-blue-300 dark:hover:border-blue-500/20 transition-all cursor-crosshair focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
         <div className="absolute right-[-10px] bottom-[-10px] opacity-10 dark:opacity-10 group-hover:opacity-20 transition-opacity">
           <Settings className="w-24 h-24 text-blue-500 dark:text-white" />
         </div>

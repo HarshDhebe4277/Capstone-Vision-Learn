@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import PipelineStepCard from "@/components/PipelineStepCard";
 import { CheckCircle2, RefreshCw, MoreHorizontal, FileText, Mic, Save, Activity, TriangleAlert, Grid2X2 } from "lucide-react";
 
-export default function ProcessingPage() {
+function ProcessingPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const jobId = searchParams.get("jobId");
@@ -92,7 +92,7 @@ export default function ProcessingPage() {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col relative overflow-x-hidden font-sans">
+    <div data-page-name="Processing" className="min-h-screen flex flex-col relative overflow-x-hidden font-sans">
       <div className="absolute inset-0 bg-dot-pattern z-0 opacity-100 pointer-events-none"></div>
       <div className="absolute top-[20%] right-[-5%] w-[400px] h-[400px] bg-indigo-300/30 dark:bg-indigo-500/5 rounded-full blur-[100px] pointer-events-none z-0"></div>
 
@@ -115,7 +115,12 @@ export default function ProcessingPage() {
             <div className="text-xs text-gray-500 dark:text-[#8e95b3]">{pollMessage}</div>
           </section>
 
-          <section className="w-full bg-white/80 dark:bg-[#12141c]/80 backdrop-blur-md rounded-[20px] p-8 border border-gray-200 dark:border-white/5 shadow-xl flex flex-col gap-5">
+          <section 
+            data-nav-section="progress"
+            data-nav-order="2"
+            data-nav-name="Overall Progress"
+            className="w-full bg-white/80 dark:bg-[#12141c]/80 backdrop-blur-md rounded-[20px] p-8 border border-gray-200 dark:border-white/5 shadow-xl flex flex-col gap-5"
+          >
             <div className="flex justify-between items-baseline">
               <span className="text-sm font-semibold text-gray-500 dark:text-gray-400 tracking-wide">Global Progress</span>
               <span className="text-2xl font-bold text-gray-900 dark:text-white tracking-widest pl-2">{progress}<span className="text-base text-gray-500">%</span></span>
@@ -145,7 +150,12 @@ export default function ProcessingPage() {
             </div>
           </section>
 
-          <section className="flex flex-col gap-6 mt-4">
+          <section 
+            data-nav-section="steps"
+            data-nav-order="3"
+            data-nav-name="Pipeline Steps"
+            className="flex flex-col gap-6 mt-4"
+          >
             <div className="flex items-center gap-3">
               <Activity className="w-5 h-5 text-gray-500 dark:text-gray-300" />
               <h2 className="text-xl font-bold text-gray-900 dark:text-white tracking-wide">Vision-to-Narration Pipeline</h2>
@@ -165,13 +175,24 @@ export default function ProcessingPage() {
             </div>
           </section>
 
-          <section className="mt-8 flex justify-center pb-8">
+          <section 
+            data-nav-section="cancel"
+            data-nav-order="4"
+            data-nav-name="Control Actions"
+            className="mt-8 flex justify-center pb-8"
+          >
             <div className="bg-red-50/80 dark:bg-[#151214]/60 border border-red-200 dark:border-red-500/10 rounded-2xl md:min-w-[500px] p-6 flex flex-col items-center gap-6 shadow-sm dark:shadow-[0_0_80px_-20px_rgba(239,68,68,0.1)]">
               <div className="flex items-center gap-3 text-red-600 dark:text-red-400">
                 <TriangleAlert className="w-4 h-4" />
                 <span className="text-[12px] font-bold tracking-wide">Cancelling will lose all currently unsaved progress.</span>
               </div>
-              <button className="bg-red-600 dark:bg-[#aa1e1e] hover:bg-red-700 text-white text-xs font-bold px-6 py-2.5 rounded shadow-sm hover:shadow-[0_0_15px_rgba(220,38,38,0.2)] dark:hover:shadow-[0_0_15px_rgba(220,38,38,0.3)] transition-all flex items-center gap-2 tracking-wide uppercase">
+              <button 
+                data-a11y-id="cancel-processing"
+                data-a11y-label="Cancel Processing"
+                data-a11y-description="Aborts the active video or notes synthesis and returns to library."
+                onClick={() => router.push("/library")}
+                className="bg-red-600 dark:bg-[#aa1e1e] hover:bg-red-700 text-white text-xs font-bold px-6 py-2.5 rounded shadow-sm hover:shadow-[0_0_15px_rgba(220,38,38,0.2)] dark:hover:shadow-[0_0_15px_rgba(220,38,38,0.3)] transition-all flex items-center gap-2 tracking-wide uppercase focus:outline-none focus:ring-2 focus:ring-red-500"
+              >
                 <div className="w-4 h-4 bg-white/20 rounded-full flex items-center justify-center p-[2px]">
                   <div className="w-full h-full bg-white rounded-full flex items-center justify-center"><div className="w-1.5 h-1.5 bg-red-600 dark:bg-[#aa1e1e] rounded-sm"></div></div>
                 </div>
@@ -182,10 +203,27 @@ export default function ProcessingPage() {
 
         </main>
         
-        <div className="max-w-[1100px] w-full mx-auto px-6 md:px-12 pb-6 z-20">
+        <div 
+          data-nav-section="footer"
+          data-nav-order="5"
+          data-nav-name="Footer Links"
+          className="max-w-[1100px] w-full mx-auto px-6 md:px-12 pb-6 z-20"
+        >
           <Footer />
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ProcessingPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex flex-col justify-center items-center bg-gray-50 dark:bg-[#0d0f14] text-gray-500">
+        <div className="animate-pulse font-bold">Loading pipeline status...</div>
+      </div>
+    }>
+      <ProcessingPageContent />
+    </Suspense>
   );
 }
